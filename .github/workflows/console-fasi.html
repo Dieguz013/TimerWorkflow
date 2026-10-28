@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141A22">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Console Operativa — Timing Fasi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#0C1016;
+    --panel:#141A22;
+    --panel-2:#1A212B;
+    --border:#28323E;
+    --border-soft:#1F2831;
+    --text:#DDE3EA;
+    --text-dim:#7C8899;
+    --text-faint:#4C5666;
+    --amber:#E3A23D;
+    --amber-dim:#5A4322;
+    --cyan:#4FC3D9;
+    --cyan-dim:#1F3A40;
+    --red:#E2554A;
+    --red-dim:#4A2420;
+    --mono:'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    --sans:'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0) 120px),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 22px;
+    border-bottom:1px solid var(--border-soft);
+    background:var(--panel);
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .topbar-left{display:flex; align-items:center; gap:14px;}
+  .brand{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:0.02em;
+    color:var(--text-dim);
+  }
+  .session-code{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--amber);
+    background:var(--amber-dim);
+    padding:4px 9px;
+    border:1px solid #6b5127;
+    border-radius:3px;
+  }
+  .topbar-right{display:flex; align-items:center; gap:12px;}
+  .clock{
+    font-family:var(--mono);
+    font-size:15px;
+    color:var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .status-pill{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:6px 11px;
+    border-radius:3px;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .status-pill .sym{font-size:14px; line-height:1;}
+  .status-pill.ahead{border-color:#2b5a63; background:var(--cyan-dim); color:var(--cyan);}
+  .status-pill.late{border-color:#6b332c; background:var(--red-dim); color:var(--red);}
+  .status-pill.ontime{border-color:#3a3225; background:var(--amber-dim); color:var(--amber);}
+
+  .gear-btn{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-family:var(--mono);
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:3px;
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .gear-btn:hover{border-color:var(--text-dim); color:var(--text);}
+
+  /* ---------- LAYOUT ---------- */
+  .main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 20px 40px;
+    gap:26px;
+  }
+  .hidden{display:none !important;}
+
+  /* ---------- SETUP VIEW ---------- */
+  .setup-wrap{
+    width:100%;
+    max-width:640px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .setup-header{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    border-bottom:1px solid var(--border-soft);
+    padding-bottom:14px;
+  }
+  .setup-header h1{
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  .setup-header p{
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  .field-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .field-block{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  label{
+    font-size:11.5px;
+    color:var(--text-dim);
+  }
+  input[type=text], input[type=time], input[type=number]{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:14px;
+    padding:8px 10px;
+    border-radius:3px;
+    outline:none;
+    width:100%;
+  }
+  input:focus{border-color:var(--amber);}
+  .time-num{
+    font-family:var(--mono);
+    width:64px;
+    text-align:center;
+  }
+
+  .phase-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .phase-row{
+    display:grid;
+    grid-template-columns: 26px 1fr 62px 8px 62px 90px 26px;
+    gap:8px;
+    align-items:end;
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:4px;
+    padding:10px;
+  }
+  .phase-idx{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-faint);
+    align-self:center;
+    text-align:center;
+  }
+  .phase-code{
+    grid-column:1 / -1;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--amber);
+    letter-spacing:0.02em;
+  }
+  .sep{align-self:center; text-align:center; color:var(--text-faint); font-family:var(--mono);}
+  .remove-phase{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-faint);
+    border-radius:3px;
+    cursor:pointer;
+    height:34px;
+    font-size:15px;
+  }
+  .remove-phase:hover{color:var(--red); border-color:var(--red);}
+
+  .setup-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
+  }
+  .btn{
+    font-family:var(--sans);
+    font-size:13.5px;
+    font-weight:500;
+    padding:9px 16px;
+    border-radius:3px;
+    cursor:pointer;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text);
+    transition:all .15s;
+  }
+  .btn:hover{border-color:var(--text-dim);}
+  .btn-add{color:var(--cyan); border-color:#2b5a63;}
+  .btn-add:hover{background:var(--cyan-dim);}
+  .btn-primary{
+    background:var(--amber);
+    color:#241A08;
+    border:1px solid var(--amber);
+    font-weight:600;
+    padding:11px 22px;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+
+  /* ---------- CONSOLE VIEW ---------- */
+  .console-wrap{
+    width:100%;
+    max-width:720px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+  }
+
+  .phase-panel{
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:6px;
+    padding:26px 30px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .phase-panel-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .phase-name{
+    font-size:18px;
+    font-weight:600;
+  }
+  .phase-code-tag{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  .phase-meta{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+    display:flex;
+    gap:18px;
+  }
+
+  .big-timer{
+    font-family:var(--mono);
+    font-size:64px;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:0.01em;
+    font-variant-numeric: tabular-nums;
+    text-align:center;
+    padding:14px 0 2px;
+    color:var(--text);
+  }
+  .big-timer.overtime{color:var(--red);}
+  .timer-sub{
+    text-align:center;
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--text-dim);
+    margin-top:-10px;
+  }
+  .timer-sub.overtime{color:var(--red);}
+
+  .progress-track{
+    position:relative;
+    height:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--amber);
+    width:0%;
+    transition:width .3s linear;
+  }
+  .progress-fill.overtime{
+    background:repeating-linear-gradient(135deg, var(--red), var(--red) 8px, #8a3830 8px, #8a3830 16px);
+    width:100% !important;
+    animation:pulseOT 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseOT{ 0%,100%{opacity:1;} 50%{opacity:.72;} }
+  .progress-ticks{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--text-faint);
+    margin-top:2px;
+  }
+
+  .controls{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-top:6px;
+  }
+  .ctrl-btn{
+    font-family:var(--mono);
+    font-size:13.5px;
+    font-weight:600;
+    padding:12px 26px;
+    border-radius:4px;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text);
+    cursor:pointer;
+    letter-spacing:0.03em;
+    transition:all .15s;
+  }
+  .ctrl-btn:hover:not(:disabled){border-color:var(--text-dim);}
+  .ctrl-btn:disabled{opacity:.35; cursor:not-allowed;}
+  .ctrl-btn.next{background:var(--amber); border-color:var(--amber); color:#241A08;}
+  .ctrl-btn.next:hover:not(:disabled){filter:brightness(1.08);}
+
+  /* ---------- SWIPE TO ADVANCE ---------- */
+  .controls{align-items:stretch; flex-wrap:wrap; justify-content:stretch;}
+  .ctrl-btn.back{padding:0 18px; min-height:52px;}
+  .swipe{
+    position:relative;
+    flex:1 1 260px;
+    height:52px;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    border-radius:4px;
+    overflow:hidden;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .swipe-fill{
+    position:absolute; left:0; top:0; bottom:0; width:0;
+    background:var(--amber-dim);
+  }
+  .swipe-label{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    padding-left:48px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:0.04em;
+    color:var(--text-dim);
+    pointer-events:none;
+    text-align:center;
+  }
+  .swipe-handle{
+    position:absolute; left:3px; top:3px; bottom:3px;
+    width:52px;
+    background:var(--amber);
+    color:#241A08;
+    border-radius:3px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:16px;
+    cursor:grab;
+    touch-action:none;
+    outline:none;
+  }
+  .swipe-handle:active{cursor:grabbing;}
+  .swipe-handle:focus-visible{box-shadow:0 0 0 2px var(--cyan);}
+  .swipe.snap .swipe-handle{transition:transform .25s ease;}
+  .swipe.snap .swipe-fill{transition:width .25s ease;}
+  .swipe.due{border-color:var(--amber);}
+  .swipe.due .swipe-label{color:var(--amber);}
+  .swipe.due .swipe-handle{animation:nudge 1.6s ease-in-out infinite;}
+  @keyframes nudge{ 0%,100%{box-shadow:0 0 0 0 rgba(227,162,61,0);} 50%{box-shadow:0 0 0 5px rgba(227,162,61,.28);} }
+  .swipe.disabled{opacity:.35; pointer-events:none;}
+  @media (prefers-reduced-motion: reduce){ .swipe.due .swipe-handle{animation:none;} }
+
+  /* ---------- TIMELINE ---------- */
+  .timeline-label{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--text-faint);
+    letter-spacing:0.03em;
+    margin-bottom:8px;
+  }
+  .timeline{
+    display:flex;
+    gap:3px;
+    height:46px;
+  }
+  .tl-seg{
+    position:relative;
+    border:1px solid var(--border);
+    border-radius:3px;
+    background:var(--panel-2);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--text-faint);
+    overflow:hidden;
+    min-width:34px;
+  }
+  .tl-seg .tl-code{font-size:9.5px; letter-spacing:0.01em;}
+  .tl-seg.current{border-color:var(--amber); background:var(--amber-dim); color:var(--amber);}
+  .tl-seg.done-early{border-color:#2b5a63; background:var(--cyan-dim); color:var(--cyan);}
+  .tl-seg.done-late{border-color:#6b332c; background:var(--red-dim); color:var(--red);}
+  .tl-seg.done-ontime{border-color:var(--border); background:#202a34; color:var(--text-dim);}
+
+  .footer-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .reset-btn{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--text-faint);
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  .reset-btn:hover{color:var(--text-dim);}
+
+  .banked-note{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--text-faint);
+  }
+
+  @media (max-width:520px){
+    .big-timer{font-size:44px;}
+    .phase-row{grid-template-columns: 20px 1fr 48px 6px 48px 70px 22px;}
+  }
+
+  /* ---------- WAKE LOCK INDICATOR ---------- */
+  .wake-ind{
+    font-family:var(--mono);
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:3px;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text-dim);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .wake-ind.on{border-color:#2b5a63; background:var(--cyan-dim); color:var(--cyan); cursor:default;}
+  .wake-ind.off{border-color:#3a3225; background:var(--amber-dim); color:var(--amber);}
+
+  /* ---------- MOBILE ---------- */
+  html,body{min-height:100vh; min-height:100dvh;}
+  body{-webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;}
+
+  @media (max-width:600px){
+    body{min-height:100dvh;}
+    .topbar{
+      padding:calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left));
+      gap:8px;
+    }
+    .topbar-left{width:100%; justify-content:space-between;}
+    .topbar-right{width:100%; flex-wrap:wrap; gap:8px; justify-content:space-between;}
+    .clock{font-size:17px;}
+    .status-pill{flex:1 1 auto; justify-content:center; padding:9px 11px; font-size:13px;}
+    .gear-btn, .wake-ind{padding:9px 11px; min-height:38px;}
+
+    .main{
+      padding:16px calc(14px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+      gap:18px;
+    }
+
+    /* setup: righe fase impilate, campi a 16px per evitare lo zoom di iOS */
+    input[type=text], input[type=time], input[type=number]{font-size:16px; padding:10px;}
+    .field-row{flex-direction:column; align-items:stretch;}
+    .field-row .field-block{max-width:none !important; width:100%;}
+    .phase-row{grid-template-columns: 22px 1fr 56px 8px 56px 36px; gap:8px 6px; padding:10px 8px;}
+    .phase-row > div:nth-child(6){display:none;}
+    .remove-phase{height:42px; width:36px;}
+    .setup-actions{flex-direction:column-reverse; align-items:stretch; gap:10px;}
+    .setup-actions .btn-primary{width:100%; padding:15px 22px;}
+    .btn-add{width:100%; padding:13px 16px;}
+    .banked-note{text-align:center;}
+
+    /* console */
+    .phase-panel{padding:18px 16px 16px; gap:14px;}
+    .phase-name{font-size:17px;}
+    .big-timer{font-size:clamp(46px, 18vw, 76px); padding-top:8px;}
+    .timer-sub{font-size:12px; margin-top:-6px;}
+    .progress-track{height:14px;}
+    .controls{flex-direction:column-reverse; gap:10px; margin-top:4px;}
+    .ctrl-btn.back{width:100%; min-height:48px;}
+    .swipe{flex:0 0 auto; width:100%; height:60px;}
+    .swipe-handle{width:60px;}
+    .swipe-label{padding-left:58px; font-size:12px;}
+    .timeline{overflow-x:auto; padding-bottom:2px;}
+    .tl-seg{min-width:72px;}
+    .footer-row{flex-direction:column; gap:10px; align-items:flex-start;}
+  }
+
+  @media (orientation:landscape) and (max-height:480px){
+    .big-timer{font-size:clamp(40px, 16vh, 64px);}
+    .phase-panel{padding:12px 16px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="brand">CONSOLE&nbsp;OPERATIVA</div>
+      <div class="session-code" id="sessionCode">—</div>
+    </div>
+    <div class="topbar-right">
+      <div class="clock" id="clockNow">--:--:--</div>
+      <div class="status-pill ontime" id="statusPill">
+        <span class="sym">●</span><span id="statusText">IN PARI</span>
+      </div>
+      <button class="wake-ind hidden" id="wakeInd" type="button"></button>
+      <button class="gear-btn" id="gearBtn">⚙ CONFIG</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- SETUP VIEW -->
+    <div class="setup-wrap" id="setupView">
+      <div class="setup-header">
+        <h1>Impostazione sequenza fasi</h1>
+        <p>Definisci orario di avvio previsto e la sequenza di fasi operative. Il codice fase viene generato automaticamente in base alla durata impostata.</p>
+      </div>
+
+      <div class="field-row">
+        <div class="field-block" style="max-width:160px;">
+          <label>ORARIO DI AVVIO PREVISTO</label>
+          <input type="time" id="startTime" value="05:00">
+        </div>
+        <div class="field-block" style="flex:1;">
+          <label>NOME SESSIONE (opzionale)</label>
+          <input type="text" id="sessionName" placeholder="es. Preparazione linea A">
+        </div>
+      </div>
+
+      <div class="phase-list" id="phaseList"></div>
+
+      <button class="btn btn-add" id="addPhaseBtn">+ AGGIUNGI FASE</button>
+
+      <div class="setup-actions">
+        <span class="banked-note" id="totalPlanned">Durata totale: 00:00:00</span>
+        <button class="btn btn-primary" id="startSessionBtn">AVVIA SESSIONE →</button>
+      </div>
+    </div>
+
+    <!-- CONSOLE VIEW -->
+    <div class="console-wrap hidden" id="consoleView">
+
+      <div class="phase-panel">
+        <div class="phase-panel-top">
+          <div>
+            <div class="phase-name" id="curPhaseName">—</div>
+            <div class="phase-code-tag" id="curPhaseCode">FASE-00-000s</div>
+          </div>
+          <div class="phase-meta">
+            <span id="curPhasePlanned">PREV 00:00</span>
+            <span id="curPhaseIdx">01 / 01</span>
+          </div>
+        </div>
+
+        <div class="big-timer" id="bigTimer">00:00</div>
+        <div class="timer-sub" id="timerSub">tempo trascorso nella fase</div>
+
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-ticks">
+          <span>0:00</span>
+          <span id="tickPlanned">--:--</span>
+        </div>
+
+        <div class="controls">
+          <button class="ctrl-btn back" id="backBtn">← INDIETRO</button>
+          <div class="swipe" id="swipe" role="group" aria-label="Scorri per passare alla fase successiva">
+            <div class="swipe-fill" id="swipeFill"></div>
+            <div class="swipe-label" id="swipeLabel">SCORRI PER AVANTI</div>
+            <div class="swipe-handle" id="swipeHandle" tabindex="0" role="button" aria-label="Scorri a destra o premi Invio per andare avanti">&raquo;</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="timeline-label">SEQUENZA COMPLETA</div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+      <div class="footer-row">
+        <span class="banked-note" id="bankedNote">Scostamento cumulato: 00:00</span>
+        <button class="reset-btn" id="resetBtn">↺ nuova sessione / modifica config</button>
+      </div>
+
+    </div>
+
+  </div>
+
+<script>
+(function(){
+
+  /* ================= STATE ================= */
+  let phases = [];        // {name, planned} seconds
+  let currentIndex = 0;
+  let phaseStartedAt = null;   // ms epoch, real
+  let globalStartTs = null;    // ms epoch
+  let completedLog = {};       // index -> {planned, actual} seconds
+  let sessionActive = false;
+  let sessionCodeStr = "—";
+
+  const $ = id => document.getElementById(id);
+
+  /* ================= HELPERS ================= */
+  function pad(n, len){ n = Math.floor(n); return String(Math.abs(n)).padStart(len||2,'0'); }
+
+  function fmtHMS(totalSeconds){
+    const neg = totalSeconds < 0;
+    totalSeconds = Math.abs(Math.round(totalSeconds));
+    const h = Math.floor(totalSeconds/3600);
+    const m = Math.floor((totalSeconds%3600)/60);
+    const s = totalSeconds%60;
+    let str = h>0 ? (pad(h)+':'+pad(m)+':'+pad(s)) : (pad(m)+':'+pad(s));
+    return (neg?'-':'') + str;
+  }
+
+  function fmtDelta(totalSeconds){
+    const sign = totalSeconds > 0 ? '+' : (totalSeconds < 0 ? '-' : '');
+    return sign + fmtHMS(totalSeconds);
+  }
+
+  function phaseCode(idx, plannedSeconds){
+    return 'FASE-' + pad(idx+1,2) + '-' + Math.round(plannedSeconds) + 's';
+  }
+
+  function totalPlannedSeconds(){
+    return phases.reduce((a,p)=>a+p.planned,0);
+  }
+
+  function cumulativeBefore(idx){
+    let s=0;
+    for(let i=0;i<idx;i++) s += phases[i].planned;
+    return s;
+  }
+
+  /* ================= SETUP VIEW ================= */
+  function newPhase(name, minutes, seconds){
+    return { name: name, planned: minutes*60 + seconds };
+  }
+
+  function defaultPhases(){
+    return [
+      newPhase('Preparazione', 10, 0),
+      newPhase('Esecuzione', 20, 0),
+      newPhase('Chiusura', 10, 0)
+    ];
+  }
+
+  function renderSetup(){
+    const list = $('phaseList');
+    list.innerHTML = '';
+    phases.forEach((p, idx) => {
+      const mins = Math.floor(p.planned/60);
+      const secs = p.planned%60;
+      const row = document.createElement('div');
+      row.className = 'phase-row';
+      row.innerHTML = `
+        <div class="phase-idx">${pad(idx+1,2)}</div>
+        <div class="field-block">
+          <label>NOME FASE</label>
+          <input type="text" class="p-name" value="${p.name.replace(/"/g,'&quot;')}">
+        </div>
+        <div class="field-block">
+          <label>MIN</label>
+          <input type="number" min="0" class="time-num p-min" value="${mins}">
+        </div>
+        <div class="sep">:</div>
+        <div class="field-block">
+          <label>SEC</label>
+          <input type="number" min="0" max="59" class="time-num p-sec" value="${secs}">
+        </div>
+        <div class="field-block">
+          <label>&nbsp;</label>
+          <span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">durata</span>
+        </div>
+        <button class="remove-phase" title="Rimuovi fase">×</button>
+        <div class="phase-code">${phaseCode(idx, p.planned)}</div>
+      `;
+      row.querySelector('.p-name').addEventListener('input', e => { phases[idx].name = e.target.value; });
+      row.querySelector('.p-min').addEventListener('input', e => {
+        phases[idx].planned = Math.max(0,(parseInt(e.target.value)||0))*60 + (phases[idx].planned%60);
+        renderSetup();
+      });
+      row.querySelector('.p-sec').addEventListener('input', e => {
+        const m = Math.floor(phases[idx].planned/60);
+        phases[idx].planned = m*60 + Math.max(0, Math.min(59, parseInt(e.target.value)||0));
+        renderSetup();
+      });
+      row.querySelector('.remove-phase').addEventListener('click', () => {
+        if(phases.length <= 1) return;
+        phases.splice(idx,1);
+        renderSetup();
+      });
+      if(phases.length <= 1) row.querySelector('.remove-phase').disabled = true;
+      list.appendChild(row);
+    });
+    $('totalPlanned').textContent = 'Durata totale prevista: ' + fmtHMS(totalPlannedSeconds());
+  }
+
+  $('addPhaseBtn').addEventListener('click', () => {
+    phases.push(newPhase('Nuova fase', 5, 0));
+    renderSetup();
+  });
+
+  $('startSessionBtn').addEventListener('click', () => {
+    if(phases.length === 0) return;
+    startSession();
+  });
+
+  /* ================= SESSION START ================= */
+  function startSession(){
+    const t = $('startTime').value || '05:00';
+    const [hh,mm] = t.split(':').map(Number);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+    globalStartTs = start.getTime();
+
+    const nowMs = Date.now();
+    const totalElapsed = (nowMs - globalStartTs)/1000; // may be negative
+
+    // determine current phase index assuming on-schedule up to now
+    completedLog = {};
+    let idx = 0;
+    let cum = 0;
+    if(totalElapsed <= 0){
+      idx = 0;
+    } else {
+      for(idx=0; idx<phases.length; idx++){
+        if(totalElapsed < cum + phases[idx].planned || idx === phases.length-1){
+          break;
+        }
+        cum += phases[idx].planned;
+      }
+    }
+    currentIndex = idx;
+    phaseStartedAt = globalStartTs + cumulativeBefore(currentIndex)*1000;
+    if(totalElapsed <= 0){ phaseStartedAt = nowMs; } // start hasn't arrived yet: begin counting from now
+
+    const dateStr = start.getFullYear() + pad(start.getMonth()+1,2) + pad(start.getDate(),2);
+    const timeStr = pad(hh,2) + pad(mm,2);
+    const name = $('sessionName').value.trim();
+    sessionCodeStr = 'OP-' + dateStr + '-' + timeStr + (name? '' : '');
+    $('sessionCode').textContent = sessionCodeStr;
+
+    sessionActive = true;
+    acquireWakeLock();
+    $('setupView').classList.add('hidden');
+    $('consoleView').classList.remove('hidden');
+    renderTimeline();
+    tick();
+  }
+
+  /* ================= CONSOLE CONTROLS ================= */
+  function advancePhase(){
+    if(currentIndex >= phases.length - 1) return;
+    const nowMs = Date.now();
+    const actual = (nowMs - phaseStartedAt)/1000;
+    completedLog[currentIndex] = { planned: phases[currentIndex].planned, actual: actual };
+    currentIndex++;
+    phaseStartedAt = nowMs;
+    renderTimeline();
+    tick();
+  }
+
+  /* ---- swipe to advance: evita avanzamenti accidentali ---- */
+  (function setupSwipe(){
+    const swipe = $('swipe'), handle = $('swipeHandle'), fill = $('swipeFill');
+    const THRESHOLD = 0.85;       // percentuale di corsa richiesta
+    let dragging = false, startX = 0, pos = 0, maxPos = 0, pointerId = null;
+
+    function setPos(x){
+      pos = Math.max(0, Math.min(maxPos, x));
+      handle.style.transform = 'translateX(' + pos + 'px)';
+      fill.style.width = (pos + handle.offsetWidth + 3) + 'px';
+    }
+    function reset(){
+      swipe.classList.add('snap');
+      setPos(0);
+      fill.style.width = '0px';
+      setTimeout(() => swipe.classList.remove('snap'), 300);
+    }
+    function complete(){
+      swipe.classList.add('snap');
+      setPos(maxPos);
+      setTimeout(() => { advancePhase(); reset(); }, 160);
+    }
+
+    handle.addEventListener('pointerdown', e => {
+      if(swipe.classList.contains('disabled')) return;
+      dragging = true;
+      pointerId = e.pointerId;
+      handle.setPointerCapture(pointerId);
+      swipe.classList.remove('snap');
+      maxPos = swipe.clientWidth - handle.offsetWidth - 6;
+      startX = e.clientX - pos;
+    });
+    handle.addEventListener('pointermove', e => {
+      if(!dragging) return;
+      setPos(e.clientX - startX);
+    });
+    function end(){
+      if(!dragging) return;
+      dragging = false;
+      if(maxPos > 0 && pos / maxPos >= THRESHOLD) complete(); else reset();
+    }
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', () => { dragging = false; reset(); });
+
+    // accessibilità da tastiera: freccia destra tenuta/ripetuta fino in fondo
+    handle.addEventListener('keydown', e => {
+      if(swipe.classList.contains('disabled')) return;
+      if(e.key === 'ArrowRight'){
+        e.preventDefault();
+        maxPos = swipe.clientWidth - handle.offsetWidth - 6;
+        setPos(pos + maxPos*0.2);
+        if(pos / maxPos >= THRESHOLD) complete();
+      } else if(e.key === 'ArrowLeft' || e.key === 'Escape'){
+        reset();
+      }
+    });
+    handle.addEventListener('blur', () => { if(!dragging) reset(); });
+  })();
+
+  $('backBtn').addEventListener('click', () => {
+    if(currentIndex <= 0) return;
+    const nowMs = Date.now();
+    currentIndex--;
+    const prevActual = completedLog[currentIndex] ? completedLog[currentIndex].actual : 0;
+    delete completedLog[currentIndex];
+    phaseStartedAt = nowMs - prevActual*1000;
+    renderTimeline();
+    tick();
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    sessionActive = false;
+    releaseWakeLock();
+    $('consoleView').classList.add('hidden');
+    $('setupView').classList.remove('hidden');
+    renderSetup();
+  });
+
+  $('gearBtn').addEventListener('click', () => {
+    sessionActive = false;
+    releaseWakeLock();
+    $('consoleView').classList.add('hidden');
+    $('setupView').classList.remove('hidden');
+    renderSetup();
+  });
+
+  /* ================= TIMELINE ================= */
+  function renderTimeline(){
+    const tl = $('timeline');
+    tl.innerHTML = '';
+    const total = totalPlannedSeconds() || 1;
+    phases.forEach((p, idx) => {
+      const seg = document.createElement('div');
+      const flexBasis = Math.max(6, (p.planned/total)*100);
+      seg.style.flex = flexBasis + ' 1 0';
+      let cls = 'tl-seg';
+      if(idx === currentIndex) cls += ' current';
+      else if(completedLog[idx]){
+        const d = completedLog[idx].planned - completedLog[idx].actual;
+        if(d > 5) cls += ' done-early';
+        else if(d < -5) cls += ' done-late';
+        else cls += ' done-ontime';
+      }
+      seg.className = cls;
+      seg.innerHTML = `<div>${p.name.length>10?p.name.slice(0,9)+'…':p.name}</div><div class="tl-code">${phaseCode(idx,p.planned)}</div>`;
+      tl.appendChild(seg);
+    });
+  }
+
+  /* ================= TICK / RENDER LOOP ================= */
+  function tick(){
+    const nowMs = Date.now();
+    $('clockNow').textContent = new Date(nowMs).toLocaleTimeString('it-IT');
+
+    if(!sessionActive){ return; }
+
+    const p = phases[currentIndex];
+    const phaseElapsed = (nowMs - phaseStartedAt)/1000;
+    const planned = p.planned;
+    const overtime = phaseElapsed - planned;
+    const inOvertime = overtime > 0;
+
+    $('curPhaseName').textContent = p.name;
+    $('curPhaseCode').textContent = phaseCode(currentIndex, planned);
+    $('curPhasePlanned').textContent = 'PREV ' + fmtHMS(planned);
+    $('curPhaseIdx').textContent = pad(currentIndex+1,2) + ' / ' + pad(phases.length,2);
+    $('tickPlanned').textContent = fmtHMS(planned);
+
+    const bigTimer = $('bigTimer');
+    const timerSub = $('timerSub');
+    if(inOvertime){
+      bigTimer.textContent = fmtHMS(phaseElapsed);
+      bigTimer.classList.add('overtime');
+      timerSub.textContent = 'EXTRA TIME — fuori tempo di ' + fmtHMS(overtime);
+      timerSub.classList.add('overtime');
+    } else {
+      bigTimer.textContent = fmtHMS(phaseElapsed);
+      bigTimer.classList.remove('overtime');
+      timerSub.textContent = 'trascorsi nella fase · residuo ' + fmtHMS(planned - phaseElapsed);
+      timerSub.classList.remove('overtime');
+    }
+
+    const fill = $('progressFill');
+    if(inOvertime){
+      fill.classList.add('overtime');
+    } else {
+      fill.classList.remove('overtime');
+      fill.style.width = Math.min(100, (phaseElapsed/planned)*100) + '%';
+    }
+
+    $('backBtn').disabled = (currentIndex === 0);
+    const isLast = (currentIndex === phases.length-1);
+    const swipeEl = $('swipe');
+    swipeEl.classList.toggle('disabled', isLast);
+    swipeEl.classList.toggle('due', inOvertime || phaseElapsed >= planned);
+    $('swipeLabel').textContent = isLast
+      ? 'ULTIMA FASE'
+      : (phaseElapsed >= planned ? 'FASE COMPLETATA · SCORRI PER AVANTI' : 'SCORRI PER AVANTI');
+
+    // overall status
+    let banked = 0;
+    for(const k in completedLog){ banked += (completedLog[k].planned - completedLog[k].actual); }
+    const liveDelta = banked - (inOvertime ? overtime : 0);
+
+    const pill = $('statusPill');
+    const symEl = pill.querySelector('.sym');
+    const txtEl = $('statusText');
+    pill.classList.remove('ahead','late','ontime');
+    if(liveDelta > 5){
+      pill.classList.add('ahead'); symEl.textContent = '▲'; txtEl.textContent = 'ANTICIPO ' + fmtDelta(liveDelta);
+    } else if(liveDelta < -5){
+      pill.classList.add('late'); symEl.textContent = '▼'; txtEl.textContent = 'RITARDO ' + fmtDelta(liveDelta);
+    } else {
+      pill.classList.add('ontime'); symEl.textContent = '●'; txtEl.textContent = 'IN PARI ' + fmtDelta(liveDelta);
+    }
+    $('bankedNote').textContent = 'Scostamento cumulato rispetto al piano: ' + fmtDelta(liveDelta);
+
+    renderTimeline();
+  }
+
+  /* ================= WAKE LOCK (schermo sempre acceso) ================= */
+  let wakeLock = null;
+
+  function setWakeInd(state){
+    const el = $('wakeInd');
+    el.classList.remove('on','off','hidden');
+    if(state === 'on'){
+      el.classList.add('on');  el.textContent = '☀ SCHERMO ACCESO';
+    } else if(state === 'off'){
+      el.classList.add('off'); el.textContent = '☾ TOCCA: MANTIENI ACCESO';
+    } else if(state === 'unsupported'){
+      el.classList.add('off'); el.textContent = '⚠ WAKE LOCK N/D';
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
+  async function acquireWakeLock(){
+    if(!('wakeLock' in navigator)){ setWakeInd('unsupported'); return; }
+    try{
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        if(sessionActive) setWakeInd('off');
+      });
+      setWakeInd('on');
+    } catch(err){
+      wakeLock = null;
+      setWakeInd('off');
+    }
+  }
+
+  function releaseWakeLock(){
+    if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+    setWakeInd('idle');
+  }
+
+  // il browser rilascia il blocco quando la pagina va in background: lo riprendiamo al ritorno
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && sessionActive && !wakeLock) acquireWakeLock();
+  });
+  // se il browser ha rifiutato la richiesta, un tocco (gesto utente) la ripete
+  $('wakeInd').addEventListener('click', () => { if(sessionActive && !wakeLock) acquireWakeLock(); });
+
+  /* ================= INIT ================= */
+  phases = defaultPhases();
+  renderSetup();
+  setInterval(tick, 500);
+  tick();
+
+})();
+</script>
+
+</body>
+</html>
