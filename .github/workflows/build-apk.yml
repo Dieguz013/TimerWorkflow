@@ -15,7 +15,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
+      - name: Prepara Android SDK (gia' presente sul runner)
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null || true
 
       - uses: gradle/actions/setup-gradle@v4
         with:
