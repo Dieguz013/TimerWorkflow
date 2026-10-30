@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- anello cronometro -->
+    <path
+        android:pathData="M54,34 A22,22 0 1,1 54,78 A22,22 0 1,1 54,34 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#E3A23D"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <!-- pulsante superiore -->
+    <path
+        android:pathData="M48,25 L60,25"
+        android:strokeColor="#E3A23D"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <!-- lancette -->
+    <path
+        android:pathData="M54,56 L54,44"
+        android:strokeColor="#4FC3D9"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,56 L63,62"
+        android:strokeColor="#4FC3D9"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+</vector>
