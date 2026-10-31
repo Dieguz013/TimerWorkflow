@@ -56,7 +56,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Compila
-        run: ./gradlew --no-daemon assembleDebug
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --console=plain assembleDebug 2>&1 | tee build.log
+
+      - name: Riepilogo errori di compilazione
+        if: failure()
+        run: |
+          grep -E "error:|symbol:|location:|What went wrong|Execution failed|Could not|Unsupported|FAILURE" build.log | head -25 > errori.txt || true
+          MSG=$(head -c 3500 errori.txt | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=Errori di compilazione::${MSG}"
 
       - name: Nome APK con versione e commit
         id: apk
