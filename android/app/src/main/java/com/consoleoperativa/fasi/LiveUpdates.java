@@ -13,11 +13,13 @@ import java.util.List;
 final class LiveUpdates {
     private static final int AMBER = Color.rgb(0xE3, 0xA2, 0x3D);
     private static final int RED = Color.rgb(0xE2, 0x55, 0x4A);
+    private static final String EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing";
 
     private LiveUpdates() {}
 
     static void apply(Notification.Builder b, SessionState s, long elapsedSec, boolean overtime) {
-        b.setRequestPromotedOngoing(true);
+        // richiesta di notifica "promossa" (Live): nell'SDK 36 si imposta tramite l'extra dedicato
+        b.getExtras().putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true);
         if (overtime) {
             b.setShortCriticalText("EXTRA");
         }
