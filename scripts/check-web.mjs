@@ -28,7 +28,7 @@ scripts.forEach((m, i) => {
 const requiredIds = [
   'startTime', 'useSchedule', 'startSessionBtn', 'phaseList',
   'bigTimer', 'progressFill', 'statusPill',
-  'swipe', 'swipeHandle', 'swipeBack', 'swipeBackHandle', 'timeline',
+  'swipe', 'swipeHandle', 'swipeBack', 'swipeBackHandle', 'timeline', 'soundBtn',
 ];
 for (const id of requiredIds) {
   if (!new RegExp(`id=["']${id}["']`).test(html)) errors.push(`manca l'elemento id="${id}"`);

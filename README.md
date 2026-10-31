@@ -15,6 +15,18 @@ L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anc
 - Avanzamento con swipe verso destra, ritorno alla fase precedente con swipe verso sinistra (nessun passaggio accidentale).
 - Scostamento cumulato con simboli: ▲ anticipo, ● in pari, ▼ ritardo.
 - Schermo sempre acceso durante la sessione, interfaccia adattata allo schermo del telefono.
+- Suoni per avvio, cambio fase, ultimi secondi, scadenza ed extra time (con interruttore).
+- La sessione si ripristina alla riapertura dell'app e non si perde se viene chiusa.
+- Android: notifica fissa con il timer, servizio in background, avviso di fase scaduta a schermo spento e notifica "Live" per la Samsung Now Bar.
+
+## Notifiche e Samsung Now Bar (Android)
+
+Alla prima apertura l'app chiede il permesso di inviare notifiche: va concesso, altrimenti timer e avvisi non compaiono.
+
+- **Notifica del timer**: resta visibile finché la sessione è attiva e mostra fase, conto alla rovescia, avanzamento e anticipo/ritardo. Toccandola si riapre l'app.
+- **Avviso di fase scaduta**: suono e vibrazione quando la fase termina e l'app non è in primo piano.
+- **Samsung Now Bar**: usa le notifiche "Live" di Android 16, quindi richiede un Samsung con One UI 8 o successivo. Se non compare, controlla nelle impostazioni delle notifiche dell'app che le notifiche live siano consentite. Sui telefoni precedenti resta la notifica normale.
+- Per evitare che il sistema fermi l'app in background, nelle impostazioni batteria dell'app scegli "Senza restrizioni".
 
 ## Struttura del repository
 
