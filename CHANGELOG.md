@@ -6,6 +6,9 @@ Formato basato su [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Vers
 
 ### Aggiunto
 - Notifica fissa con il timer della fase: conto alla rovescia, barra di avanzamento, posizione nella sequenza e anticipo/ritardo complessivo.
+- Stile strutturato delle notifiche: titolo con fase e posizione, riga di stato con la fase successiva, colore in base allo scostamento (azzurro anticipo, ambra in pari, rosso ritardo o extra time). La vista espansa mostra residuo, previsto, scostamento, prossima fase e la sequenza completa con l'esito di ogni fase.
+- Su Android 16 la barra della notifica live è divisa in un segmento per fase, colorato in base all'esito.
+- Avviso di fase scaduta con dettaglio della fase conclusa e di quella successiva.
 - Notifica "Live" per Android 16 (Samsung Now Bar con One UI 8). Sui dispositivi precedenti resta la notifica normale.
 - Servizio in primo piano che mantiene viva la sessione in background.
 - Avviso di fase scaduta con suono e vibrazione anche a schermo spento o app chiusa (allarme esatto).

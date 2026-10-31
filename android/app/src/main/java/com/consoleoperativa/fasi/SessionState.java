@@ -3,6 +3,7 @@ package com.consoleoperativa.fasi;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -24,6 +25,12 @@ final class SessionState {
     String nextName = "";
     String nextCode = "";
 
+    /** Nomi e durate pianificate (secondi) di tutte le fasi, in ordine. */
+    String[] names = new String[0];
+    long[] plannedAll = new long[0];
+    /** Scostamento (pianificato - effettivo, secondi) delle fasi gia' chiuse: indici 0..idx-2. */
+    long[] done = new long[0];
+
     static SessionState parse(String json) {
         try {
             JSONObject o = new JSONObject(json);
@@ -38,6 +45,25 @@ final class SessionState {
             s.bankedSec = o.optLong("bankedSec", 0);
             s.nextName = o.optString("nextName");
             s.nextCode = o.optString("nextCode");
+
+            JSONArray ph = o.optJSONArray("phases");
+            if (ph != null) {
+                s.names = new String[ph.length()];
+                s.plannedAll = new long[ph.length()];
+                for (int i = 0; i < ph.length(); i++) {
+                    JSONObject p = ph.getJSONObject(i);
+                    s.names[i] = p.optString("name");
+                    s.plannedAll[i] = p.optLong("planned", 0);
+                }
+            }
+            JSONArray dn = o.optJSONArray("done");
+            if (dn != null) {
+                s.done = new long[dn.length()];
+                for (int i = 0; i < dn.length(); i++) {
+                    s.done[i] = dn.optLong(i, 0);
+                }
+            }
+
             if (s.phaseStartMs <= 0 || s.plannedSec <= 0) return null;
             return s;
         } catch (Exception e) {

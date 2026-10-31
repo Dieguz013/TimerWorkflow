@@ -1230,7 +1230,10 @@
         phaseStartMs: Math.round(phaseStartedAt),
         bankedSec: Math.round(banked),
         nextName: next ? next.name : '',
-        nextCode: next ? phaseCode(currentIndex + 1, next.planned) : ''
+        nextCode: next ? phaseCode(currentIndex + 1, next.planned) : '',
+        // sequenza completa e scostamento (pianificato - effettivo, in secondi) delle fasi gia' chiuse
+        phases: phases.map(x => ({ name: x.name, planned: x.planned })),
+        done: phases.slice(0, currentIndex).map((x, i) => completedLog[i] ? Math.round(x.planned - completedLog[i].actual) : 0)
       }));
     }catch(e){}
   }
