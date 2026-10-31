@@ -52,12 +52,41 @@ Un valore positivo indica anticipo, negativo ritardo. Entro ±5 secondi lo stato
 - Web: Screen Wake Lock API, riacquisita quando la pagina torna in primo piano. L'indicatore in alto mostra lo stato e permette di riprovare con un tocco.
 - Android: `FLAG_KEEP_SCREEN_ON` sulla finestra, attivo finché l'app è in primo piano.
 
+## Persistenza della sessione
+
+I tempi sono timestamp assoluti (inizio fase, tempi effettivi delle fasi chiuse), quindi lo stato si ricostruisce correttamente anche dopo ore. A ogni cambio (avvio, avanti, indietro, fine) la web app salva in `localStorage` la sessione (`cfSession`), le fasi configurate (`cfPhases`), l'orario programmato (`cfSchedule`) e la preferenza suoni (`cfSound`). All'apertura, se esiste una sessione salvata, viene ripristinata la console.
+
+## Suoni
+
+Sintetizzati con WebAudio, senza file. Eventi: avvio, avanti, indietro, un beep a ogni secondo negli ultimi 5, scadenza fase e promemoria ogni minuto di extra time. I suoni arretrati non vengono recuperati dopo una pausa in background. L'audio si abilita dopo il primo tocco dell'utente.
+
+## Notifiche e background (Android)
+
+```
+web app (JS)  --AndroidBridge.sessionUpdate(json)-->  NativeBridge
+                                                        |-- SessionState (SharedPreferences)
+                                                        |-- TimerService (servizio in primo piano)
+                                                        |     notifica fissa: cronometro a ritroso, avanzamento, stato
+                                                        |     LiveUpdates (API 36): notifica promossa / Now Bar
+                                                        '-- PhaseAlarm (allarme esatto a fine fase)
+                                                              '-- PhaseAlarmReceiver: avviso sonoro se l'app non e' in primo piano
+```
+
+- La web app invia lo stato della fase a ogni cambio: codice, nome, posizione, durata, inizio e scostamento cumulato delle fasi chiuse. `sessionEnd` rimuove tutto.
+- `TimerService` mostra la notifica con cronometro a ritroso gestito dal sistema (continua anche a schermo spento) e aggiorna avanzamento e scostamento ogni secondo, ogni 30 secondi a schermo spento. Dopo la fine della fase il cronometro prosegue in negativo (extra time).
+- Lo stile delle notifiche è in `NotificationFactory`. Collassata: titolo `Fase  NN/NN`, riga di stato (▲ anticipo, ● in pari, ▼ ritardo, più la fase successiva), sottotitolo con il codice fase, cronometro a ritroso e colore d'accento in base allo scostamento. Espansa (Android < 16): residuo o extra time, previsto, scostamento, prossima fase e la sequenza completa con ✓ in pari, ▲ anticipo, ▼ ritardo, ▸ corrente, ○ da fare. Su Android 16 `LiveUpdates` usa lo stile di avanzamento con un segmento per fase (azzurro anticipo, grigio in pari, rosso ritardo, ambra corrente, scuro da fare). Le notifiche promosse non ammettono viste personalizzate, per questo si usano solo stili standard.
+- Il payload include l'elenco delle fasi (`phases`) e lo scostamento in secondi delle fasi già chiuse (`done`).
+- Se il processo viene chiuso, il servizio riparte dai dati salvati (`START_STICKY`) e ricostruisce la notifica.
+- A fine fase `PhaseAlarm` programma un allarme esatto. Il ricevitore pubblica l'avviso sul canale "Avvisi di fase" (suono e vibrazione) solo se l'app non è visibile; in primo piano suona la web app.
+- Su Android 16 (API 36) la notifica viene richiesta come "promossa" con stile di avanzamento: è il formato che la Samsung Now Bar con One UI 8 mostra come notifica live. La classe `LiveUpdates` è separata per non caricare API assenti sui dispositivi più vecchi.
+- Permessi: notifiche, vibrazione, servizio in primo piano (tipo `specialUse`), allarme esatto (`USE_EXACT_ALARM`) e notifiche promosse.
+
 ## App Android
 
 - Activity unica con `WebView` che carica `file:///android_asset/index.html`.
 - La cartella `src/web` è aggiunta come sorgente degli asset in `android/app/build.gradle.kts`, quindi non esiste una seconda copia dell'interfaccia.
-- Il tasto indietro minimizza l'app per non perdere la sessione; la rotazione non ricrea l'activity.
-- Permesso `INTERNET` richiesto solo per i font online; senza rete si usano i font di sistema.
+- Il tasto indietro minimizza l'app per non perdere la sessione; la rotazione non ricrea l'activity; toccando la notifica si riapre l'app già in esecuzione (`singleTask`).
+- `INTERNET` serve solo per i font online; senza rete si usano i font di sistema.
 
 ## Pipeline CI
 

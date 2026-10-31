@@ -4,14 +4,15 @@ plugins {
 
 android {
     namespace = "com.consoleoperativa.fasi"
-    compileSdk = 34
+    // 36 = API delle notifiche "Live" (Android 16); targetSdk resta 34 per non cambiare il layout della WebView
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.consoleoperativa.fasi"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
     }
 
     buildTypes {
@@ -21,6 +22,7 @@ android {
     }
 
     compileOptions {
+        encoding = "UTF-8"
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
