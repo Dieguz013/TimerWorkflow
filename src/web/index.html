@@ -576,6 +576,7 @@
         <span class="sym">●</span><span id="statusText">IN PARI</span>
       </div>
       <button class="wake-ind hidden" id="wakeInd" type="button"></button>
+      <button class="gear-btn" id="soundBtn" type="button">♪ SUONI ON</button>
       <button class="gear-btn" id="gearBtn">⚙ CONFIG</button>
     </div>
   </div>
@@ -730,6 +731,7 @@
 
   function renderSetup(){
     const list = $('phaseList');
+    savePhases();
     list.innerHTML = '';
     phases.forEach((p, idx) => {
       const mins = Math.floor(p.planned/60);
@@ -758,7 +760,7 @@
         <button class="remove-phase" title="Rimuovi fase">×</button>
         <div class="phase-code">${phaseCode(idx, p.planned)}</div>
       `;
-      row.querySelector('.p-name').addEventListener('input', e => { phases[idx].name = e.target.value; });
+      row.querySelector('.p-name').addEventListener('input', e => { phases[idx].name = e.target.value; savePhases(); });
       row.querySelector('.p-min').addEventListener('input', e => {
         phases[idx].planned = Math.max(0,(parseInt(e.target.value)||0))*60 + (phases[idx].planned%60);
         renderSetup();
@@ -836,6 +838,8 @@
     $('consoleView').classList.remove('hidden');
     renderTimeline();
     tick();
+    sound.start();
+    persistAndSync();
   }
 
   /* ================= CONSOLE CONTROLS ================= */
@@ -848,6 +852,8 @@
     phaseStartedAt = nowMs;
     renderTimeline();
     tick();
+    sound.next();
+    persistAndSync();
   }
 
   function goBack(){
@@ -859,6 +865,8 @@
     phaseStartedAt = nowMs - prevActual*1000;
     renderTimeline();
     tick();
+    sound.back();
+    persistAndSync();
   }
 
   /* ---- swipe di sblocco: avanti = verso destra, indietro = verso sinistra ---- */
@@ -923,21 +931,28 @@
   makeSwipe($('swipe'),     $('swipeHandle'),     $('swipeFill'),     1, advancePhase);
   makeSwipe($('swipeBack'), $('swipeBackHandle'), $('swipeBackFill'), -1, goBack);
 
-  $('resetBtn').addEventListener('click', () => {
+  function endSession(){
     sessionActive = false;
     releaseWakeLock();
+    persistAndSync();
     $('consoleView').classList.add('hidden');
     $('setupView').classList.remove('hidden');
     renderSetup();
-  });
+  }
 
-  $('gearBtn').addEventListener('click', () => {
-    sessionActive = false;
-    releaseWakeLock();
-    $('consoleView').classList.add('hidden');
-    $('setupView').classList.remove('hidden');
-    renderSetup();
-  });
+  // doppio tocco: evita di terminare la sessione per errore
+  function guardEnd(btn, armedText){
+    const original = btn.textContent;
+    let timer = null;
+    btn.addEventListener('click', () => {
+      if(!sessionActive){ endSession(); return; }
+      if(timer){ clearTimeout(timer); timer = null; btn.textContent = original; endSession(); return; }
+      btn.textContent = armedText;
+      timer = setTimeout(() => { timer = null; btn.textContent = original; }, 4000);
+    });
+  }
+  guardEnd($('resetBtn'), '⚠ tocca ancora per terminare la sessione');
+  guardEnd($('gearBtn'), '⚠ CONFERMA');
 
   /* ================= TIMELINE ================= */
   function renderTimeline(){
@@ -974,6 +989,7 @@
     const planned = p.planned;
     const overtime = phaseElapsed - planned;
     const inOvertime = overtime > 0;
+    soundEvents(planned - phaseElapsed);
 
     $('curPhaseName').textContent = p.name;
     $('curPhaseCode').textContent = phaseCode(currentIndex, planned);
@@ -1079,6 +1095,172 @@
   // se il browser ha rifiutato la richiesta, un tocco (gesto utente) la ripete
   $('wakeInd').addEventListener('click', () => { if(sessionActive && !wakeLock) acquireWakeLock(); });
 
+  /* ================= SUONI ================= */
+  // Suoni sintetizzati con WebAudio (nessun file). In background l'avviso di fine fase
+  // e' gestito dalla notifica nativa Android.
+  const sound = (function(){
+    let ctx = null;
+    let on = true;
+    try{ on = localStorage.getItem('cfSound') !== '0'; }catch(e){}
+
+    function ensure(){
+      if(!ctx){
+        const C = window.AudioContext || window.webkitAudioContext;
+        if(!C) return null;
+        ctx = new C();
+      }
+      if(ctx.state === 'suspended') ctx.resume().catch(() => {});
+      return ctx;
+    }
+    function tone(freq, start, dur, vol, type){
+      if(!on) return;
+      const c = ensure();
+      if(!c) return;
+      const o = c.createOscillator();
+      const g = c.createGain();
+      const t = c.currentTime + start;
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.2, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g);
+      g.connect(c.destination);
+      o.start(t);
+      o.stop(t + dur + 0.03);
+    }
+    return {
+      isOn(){ return on; },
+      set(v){
+        on = !!v;
+        try{ localStorage.setItem('cfSound', on ? '1' : '0'); }catch(e){}
+        if(on) this.next();
+      },
+      unlock(){ ensure(); },
+      start(){ tone(660, 0, 0.12, 0.2); tone(880, 0.14, 0.2, 0.2); },
+      next(){  tone(784, 0, 0.10, 0.18); tone(1047, 0.11, 0.18, 0.18); },
+      back(){  tone(523, 0, 0.10, 0.18); tone(392, 0.11, 0.18, 0.18); },
+      tick(){  tone(1200, 0, 0.05, 0.08, 'square'); },
+      expire(){
+        [0, 0.28, 0.56].forEach(d => tone(880, d, 0.2, 0.3, 'triangle'));
+        tone(1320, 0.9, 0.45, 0.3, 'triangle');
+      },
+      extra(){ tone(440, 0, 0.25, 0.25, 'sawtooth'); tone(330, 0.3, 0.35, 0.25, 'sawtooth'); }
+    };
+  })();
+
+  const soundMark = { key: '', lastTick: null, expired: false, extraMin: 0 };
+
+  // eventi sonori della fase corrente: ultimi 5 secondi, scadenza, promemoria ogni minuto di extra time.
+  // Se la pagina era in background (suono gia' perso) non si recuperano i suoni arretrati.
+  function soundEvents(remaining){
+    if(document.visibilityState !== 'visible') return;
+    const key = currentIndex + ':' + Math.round(phaseStartedAt);
+    if(soundMark.key !== key){
+      soundMark.key = key;
+      soundMark.lastTick = null;
+      soundMark.expired = remaining <= 0;
+      soundMark.extraMin = Math.floor(Math.max(0, -remaining) / 60);
+      return;
+    }
+    if(remaining > 0 && remaining <= 5){
+      const sec = Math.ceil(remaining);
+      if(soundMark.lastTick !== sec){ soundMark.lastTick = sec; sound.tick(); }
+    }
+    if(remaining <= 0 && !soundMark.expired){
+      soundMark.expired = true;
+      if(remaining > -3) sound.expire();
+    }
+    if(remaining <= -60){
+      const m = Math.floor(-remaining / 60);
+      if(m > soundMark.extraMin){
+        soundMark.extraMin = m;
+        if(-remaining - m * 60 < 3) sound.extra();
+      }
+    }
+  }
+
+  function updateSoundBtn(){
+    $('soundBtn').textContent = sound.isOn() ? '♪ SUONI ON' : '♪ SUONI OFF';
+  }
+  $('soundBtn').addEventListener('click', () => { sound.set(!sound.isOn()); updateSoundBtn(); });
+  // il browser abilita l'audio solo dopo un gesto dell'utente
+  document.addEventListener('pointerdown', () => sound.unlock(), { passive: true });
+
+  /* ================= PERSISTENZA E BRIDGE ANDROID ================= */
+  function savePhases(){
+    try{ localStorage.setItem('cfPhases', JSON.stringify(phases)); }catch(e){}
+  }
+  function loadPhases(){
+    try{
+      const a = JSON.parse(localStorage.getItem('cfPhases') || 'null');
+      if(Array.isArray(a) && a.length && a.every(p => p && typeof p.name === 'string' && p.planned >= 0)) return a;
+    }catch(e){}
+    return null;
+  }
+
+  // la sessione si salva a ogni cambio di stato: i tempi sono timestamp assoluti,
+  // quindi si ripristina correttamente anche dopo ore, a app chiusa
+  function saveSession(){
+    try{
+      if(!sessionActive){ localStorage.removeItem('cfSession'); return; }
+      localStorage.setItem('cfSession', JSON.stringify({
+        phases: phases, currentIndex: currentIndex, phaseStartedAt: phaseStartedAt,
+        globalStartTs: globalStartTs, completedLog: completedLog, sessionCodeStr: sessionCodeStr
+      }));
+    }catch(e){}
+  }
+
+  // notifica nativa Android (servizio in primo piano); assente nel browser
+  function syncNative(){
+    if(!window.AndroidBridge) return;
+    try{
+      if(!sessionActive){ window.AndroidBridge.sessionEnd(); return; }
+      const p = phases[currentIndex];
+      let banked = 0;
+      for(const k in completedLog) banked += completedLog[k].planned - completedLog[k].actual;
+      const next = phases[currentIndex + 1];
+      window.AndroidBridge.sessionUpdate(JSON.stringify({
+        code: sessionCodeStr,
+        phaseName: p.name,
+        phaseCode: phaseCode(currentIndex, p.planned),
+        idx: currentIndex + 1,
+        count: phases.length,
+        plannedSec: p.planned,
+        phaseStartMs: Math.round(phaseStartedAt),
+        bankedSec: Math.round(banked),
+        nextName: next ? next.name : '',
+        nextCode: next ? phaseCode(currentIndex + 1, next.planned) : ''
+      }));
+    }catch(e){}
+  }
+
+  function persistAndSync(){ saveSession(); syncNative(); }
+
+  function restoreSession(){
+    try{
+      const raw = localStorage.getItem('cfSession');
+      if(!raw) return false;
+      const d = JSON.parse(raw);
+      if(!d || !Array.isArray(d.phases) || d.phases.length === 0) return false;
+      if(!(d.currentIndex >= 0 && d.currentIndex < d.phases.length) || !isFinite(d.phaseStartedAt)) return false;
+      phases = d.phases;
+      currentIndex = d.currentIndex;
+      phaseStartedAt = d.phaseStartedAt;
+      globalStartTs = d.globalStartTs;
+      completedLog = d.completedLog || {};
+      sessionCodeStr = d.sessionCodeStr || '—';
+      $('sessionCode').textContent = sessionCodeStr;
+      sessionActive = true;
+      acquireWakeLock();
+      $('setupView').classList.add('hidden');
+      $('consoleView').classList.remove('hidden');
+      renderTimeline();
+      syncNative();
+      return true;
+    }catch(e){ return false; }
+  }
+
   /* ================= INIT ================= */
   function syncSchedule(){
     const on = $('useSchedule').checked;
@@ -1099,8 +1281,10 @@
   $('startTime').addEventListener('change', saveSchedule);
   syncSchedule();
 
-  phases = defaultPhases();
+  phases = loadPhases() || defaultPhases();
   renderSetup();
+  updateSoundBtn();
+  restoreSession();
   setInterval(tick, 500);
   tick();
 
