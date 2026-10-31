@@ -1,0 +1,9 @@
+* text=auto
+
+# Script di shell sempre con fine riga LF, batch con CRLF
+android/gradlew text eol=lf
+*.bat text eol=crlf
+
+# File binari
+*.jar binary
+*.png binary
