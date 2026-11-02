@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Serve solo per caricare i font online; l'app funziona anche offline con i font di sistema -->
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Nessun permesso INTERNET: l'app funziona interamente offline (font e risorse sono nell'APK) -->
 
     <!-- Notifica del timer e avvisi di fase -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

@@ -4,12 +4,12 @@
 
 | Componente | Percorso | Ruolo |
 |---|---|---|
-| Web app | `src/web/index.html` | Interfaccia e logica dei tempi (HTML, CSS e JavaScript in un unico file, senza dipendenze) |
+| Web app | `src/web/` | Interfaccia e logica dei tempi: `index.html` (HTML, CSS e JavaScript, senza dipendenze) e font locali in `fonts/` |
 | App Android | `android/app/` | Contenitore WebView a schermo intero che carica la web app come asset |
 | Pipeline CI | `.github/workflows/ci-android.yml` | Verifica i sorgenti e compila l'APK |
 | Verifica statica | `scripts/check-web.mjs` | Controlla sintassi dello script e presenza degli elementi richiesti |
 
-La web app non usa server né rete: lo stato vive in memoria durante la sessione. Solo l'interruttore di avvio programmato e l'orario impostato vengono ricordati (`localStorage`).
+La web app non usa server né rete e funziona interamente offline: i font (JetBrains Mono e IBM Plex Sans, solo sottoinsieme latino, licenza SIL OFL 1.1) sono file locali in `src/web/fonts/`. `scripts/check-web.mjs` fa fallire la CI se compare una risorsa esterna, una chiamata di rete (`fetch`, `XMLHttpRequest`, `WebSocket`...) o un file locale mancante.
 
 ## Modello dei dati
 
@@ -86,7 +86,7 @@ web app (JS)  --AndroidBridge.sessionUpdate(json)-->  NativeBridge
 - Activity unica con `WebView` che carica `file:///android_asset/index.html`.
 - La cartella `src/web` è aggiunta come sorgente degli asset in `android/app/build.gradle.kts`, quindi non esiste una seconda copia dell'interfaccia.
 - Il tasto indietro minimizza l'app per non perdere la sessione; la rotazione non ricrea l'activity; toccando la notifica si riapre l'app già in esecuzione (`singleTask`).
-- `INTERNET` serve solo per i font online; senza rete si usano i font di sistema.
+- L'APK non dichiara il permesso `INTERNET`: l'app non può accedere alla rete, e tutto (font compresi) è incluso negli asset.
 
 ## Pipeline CI
 

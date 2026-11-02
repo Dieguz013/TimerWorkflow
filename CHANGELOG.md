@@ -18,6 +18,7 @@ Formato basato su [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Vers
 ### Modificato
 - "Config" e "nuova sessione" richiedono un secondo tocco per terminare una sessione in corso.
 - Build con Android Gradle Plugin 8.10.1, Gradle 8.11.1 e compileSdk 36.
+- Funzionamento offline completo: font JetBrains Mono e IBM Plex Sans inclusi nell'app (licenza SIL OFL 1.1) al posto di Google Fonts, rimosso il permesso `INTERNET`. La verifica dei sorgenti blocca risorse e API di rete.
 
 ## [1.1.0] - 2026-10-30
 

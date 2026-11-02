@@ -4,7 +4,7 @@
 
 Console per il controllo dei tempi di una sequenza di fasi operative. Ogni fase ha una durata pianificata, un codice univoco e una barra di avanzamento. La barra di stato mostra lo scostamento complessivo dal piano: anticipo, in pari o ritardo.
 
-L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anche come app Android (WebView) per l'uso su telefono.
+L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anche come app Android (WebView) per l'uso su telefono. Funziona **interamente offline**: font e risorse sono inclusi, l'APK non richiede il permesso INTERNET e la CI blocca qualsiasi risorsa o chiamata di rete.
 
 ## Funzionalità
 
@@ -44,12 +44,12 @@ Alla prima apertura l'app chiede il permesso di inviare notifiche: va concesso, 
 ├── scripts/
 │   └── check-web.mjs                 Verifica statica della web app
 ├── src/
-│   └── web/index.html                Sorgente unico dell'applicazione
+│   └── web/                          Sorgente unico dell'applicazione (index.html + fonts/)
 ├── CHANGELOG.md
 └── README.md
 ```
 
-Il file `src/web/index.html` è l'unica copia dell'interfaccia: il progetto Android lo include come asset durante la build, senza duplicarlo.
+La cartella `src/web/` (`index.html` più i font in `fonts/`, licenza SIL OFL 1.1) è l'unica copia dell'interfaccia: il progetto Android la include come asset durante la build, senza duplicarla.
 
 ## Scaricare l'APK
 
