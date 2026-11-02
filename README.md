@@ -4,7 +4,7 @@
 
 Console per il controllo dei tempi di una sequenza di fasi operative. Ogni fase ha una durata pianificata, un codice univoco e una barra di avanzamento. La barra di stato mostra lo scostamento complessivo dal piano: anticipo, in pari o ritardo.
 
-L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anche come app Android (WebView) per l'uso su telefono.
+L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anche come app Android (WebView) per l'uso su telefono. Funziona **interamente offline**: font e risorse sono inclusi, l'APK non richiede il permesso INTERNET e la CI blocca qualsiasi risorsa o chiamata di rete.
 
 ## Funzionalità
 
@@ -15,6 +15,18 @@ L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anc
 - Avanzamento con swipe verso destra, ritorno alla fase precedente con swipe verso sinistra (nessun passaggio accidentale).
 - Scostamento cumulato con simboli: ▲ anticipo, ● in pari, ▼ ritardo.
 - Schermo sempre acceso durante la sessione, interfaccia adattata allo schermo del telefono.
+- Suoni per avvio, cambio fase, ultimi secondi, scadenza ed extra time (con interruttore).
+- La sessione si ripristina alla riapertura dell'app e non si perde se viene chiusa.
+- Android: notifica fissa con il timer, servizio in background, avviso di fase scaduta a schermo spento e notifica "Live" per la Samsung Now Bar.
+
+## Notifiche e Samsung Now Bar (Android)
+
+Alla prima apertura l'app chiede il permesso di inviare notifiche: va concesso, altrimenti timer e avvisi non compaiono.
+
+- **Notifica del timer**: resta visibile finché la sessione è attiva e mostra fase, conto alla rovescia, avanzamento e anticipo/ritardo. Toccandola si riapre l'app.
+- **Avviso di fase scaduta**: suono e vibrazione quando la fase termina e l'app non è in primo piano.
+- **Samsung Now Bar**: usa le notifiche "Live" di Android 16, quindi richiede un Samsung con One UI 8 o successivo. Se non compare, controlla nelle impostazioni delle notifiche dell'app che le notifiche live siano consentite. Sui telefoni precedenti resta la notifica normale.
+- Per evitare che il sistema fermi l'app in background, nelle impostazioni batteria dell'app scegli "Senza restrizioni".
 
 ## Struttura del repository
 
@@ -32,12 +44,12 @@ L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anc
 ├── scripts/
 │   └── check-web.mjs                 Verifica statica della web app
 ├── src/
-│   └── web/index.html                Sorgente unico dell'applicazione
+│   └── web/                          Sorgente unico dell'applicazione (index.html + fonts/)
 ├── CHANGELOG.md
 └── README.md
 ```
 
-Il file `src/web/index.html` è l'unica copia dell'interfaccia: il progetto Android lo include come asset durante la build, senza duplicarlo.
+La cartella `src/web/` (`index.html` più i font in `fonts/`, licenza SIL OFL 1.1) è l'unica copia dell'interfaccia: il progetto Android la include come asset durante la build, senza duplicarla.
 
 ## Scaricare l'APK
 

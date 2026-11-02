@@ -36,7 +36,8 @@ Per l'interfaccia apri `src/web/index.html` nel browser e prova anche a schermo 
 
 ## Regole per le modifiche
 
-- L'interfaccia vive **solo** in `src/web/index.html`. Non copiarla dentro `android/`: la build la include da sola.
+- L'interfaccia vive **solo** in `src/web/` (`index.html` e `fonts/`). Non copiarla dentro `android/`: la build la include da sola.
+- L'app deve restare offline: niente CDN, font online, `fetch` o altre chiamate di rete. Le risorse nuove vanno aggiunte come file locali in `src/web/`.
 - Se un elemento richiesto dalla logica cambia id, aggiorna anche l'elenco in `scripts/check-web.mjs`.
 - Ogni modifica visibile all'utente va annotata in `CHANGELOG.md`, sotto una nuova versione.
 - Quando cambia la versione, aggiorna `versionName` e incrementa `versionCode` in `android/app/build.gradle.kts`.
