@@ -60,6 +60,20 @@ I tempi sono timestamp assoluti (inizio fase, tempi effettivi delle fasi chiuse)
 
 Sintetizzati con WebAudio, senza file. Eventi: avvio, avanti, indietro, un beep a ogni secondo negli ultimi 5, scadenza fase e promemoria ogni minuto di extra time. I suoni arretrati non vengono recuperati dopo una pausa in background. L'audio si abilita dopo il primo tocco dell'utente.
 
+## Allarmi
+
+| Livello | Condizione | Segnali |
+|---|---|---|
+| NOM | oltre la soglia di preavviso | nessuno |
+| CAUTION | ultimi `min(30, max(5, 20% della durata))` secondi | cornice ambra lampeggiante, doppio bip ogni 5 s, tick negli ultimi 5 s |
+| WARNING | fase scaduta (extra time) | cornice rossa lampeggiante, sirena, vibrazione |
+
+TACITA silenzia e ferma il lampeggio del livello corrente; un cambio di livello o un nuovo minuto di extra time riarma l'allarme. Alla riapertura di una fase scaduta da più di 3 secondi l'allarme parte già tacitato. Lo stato è in `body[data-alarm]` e `body.ack`, il resto è CSS.
+
+## Layout
+
+La pagina non scorre mai: `html, body` hanno `overflow:hidden` e `100dvh`, gli spazi derivano dall'altezza dello schermo, le righe fase si comprimono (max 8 fasi) e in orizzontale basso la console passa a due colonne.
+
 ## Notifiche e background (Android)
 
 ```

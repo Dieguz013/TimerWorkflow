@@ -15,6 +15,8 @@ L'applicazione è una pagina web autonoma (`src/web/index.html`) distribuita anc
 - Avanzamento con swipe verso destra, ritorno alla fase precedente con swipe verso sinistra (nessun passaggio accidentale).
 - Scostamento cumulato con simboli: ▲ anticipo, ● in pari, ▼ ritardo.
 - Schermo sempre acceso durante la sessione, interfaccia adattata allo schermo del telefono.
+- Allarmi CAUTION/WARNING con cornice lampeggiante, sirena e tasto TACITA; pulsanti Reset fase e Annulla sessione con conferma.
+- Interfaccia a schermo fisso, senza scorrimento (massimo 8 fasi).
 - Suoni per avvio, cambio fase, ultimi secondi, scadenza ed extra time (con interruttore).
 - La sessione si ripristina alla riapertura dell'app e non si perde se viene chiusa.
 - Android: notifica fissa con il timer, servizio in background, avviso di fase scaduta a schermo spento e notifica "Live" per la Samsung Now Bar.
