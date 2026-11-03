@@ -2,6 +2,16 @@
 
 Formato basato su [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Versionamento semantico.
 
+## [1.3.0] - 2026-11-03
+
+### Aggiunto
+- Allarmi in stile impianti industriali e aeronautici: annunciatore NOM / CAUTION / WARNING, cornice a schermo intero lampeggiante (ambra negli ultimi secondi, rossa a fase scaduta), doppio bip di avviso e sirena in extra time, vibrazione dove disponibile. Il pulsante TACITA silenzia e ferma il lampeggio; in extra time l'allarme si riarma ogni minuto. Con "riduci movimento" attivo nel sistema i segnali restano fissi.
+- Pulsanti "Reset fase" (il timer della fase riparte da zero) e "Annulla sessione", entrambi con finestra di conferma.
+
+### Modificato
+- Layout a schermo fisso: nessuno scorrimento in nessuna schermata, in verticale e in orizzontale, da 320 px di larghezza in su. Le fasi sono al massimo 8; il campo "Nome sessione" (non usato) è stato rimosso.
+- I link "nuova sessione / modifica config" a doppio tocco sono sostituiti dai pulsanti con conferma.
+
 ## [1.2.0] - 2026-10-31
 
 ### Aggiunto
